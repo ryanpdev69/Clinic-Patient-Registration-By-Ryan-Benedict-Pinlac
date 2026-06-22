@@ -2,11 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
+  Calendar,
   ChevronDown,
   Edit2,
   LogOut,
   Plus,
   Save,
+  Search,
   Shield,
   Trash2,
   User,
@@ -150,8 +152,33 @@ function PatientsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [createdDateFilter, setCreatedDateFilter] = useState('')
 
   const isEditing = useMemo(() => editingId !== null, [editingId])
+  const filteredPatients = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase()
+
+    return patients.filter((patient) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        [
+          patient.patientName,
+          patient.gender,
+          patient.contactNumber,
+          patient.address,
+          patient.createdBy,
+          patient.updatedBy
+        ]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(normalizedSearch))
+
+      const matchesCreatedDate =
+        !createdDateFilter || formatDateInput(patient.createdAt) === createdDateFilter
+
+      return matchesSearch && matchesCreatedDate
+    })
+  }, [createdDateFilter, patients, searchTerm])
 
   useEffect(() => {
     loadPatients()
@@ -390,20 +417,53 @@ function PatientsPage() {
           <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
             <div>
               <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
-                {patients.length} {patients.length === 1 ? 'record' : 'records'}
+                {filteredPatients.length} of {patients.length} {patients.length === 1 ? 'record' : 'records'}
               </CardDescription>
               <CardTitle>Patient Records</CardTitle>
             </div>
           </CardHeader>
 
-          <CardContent>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+              <div className="relative">
+                <Search
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  className="pl-9"
+                  placeholder="Search patients"
+                  aria-label="Search patient records"
+                />
+              </div>
+              <div className="relative">
+                <Calendar
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  type="date"
+                  value={createdDateFilter}
+                  onChange={(event) => setCreatedDateFilter(event.target.value)}
+                  className="pl-9"
+                  aria-label="Filter patient records by created date"
+                />
+              </div>
+            </div>
+
             {loading ? (
               <EmptyState>Loading patient records...</EmptyState>
             ) : patients.length === 0 ? (
               <EmptyState>No patient records found.</EmptyState>
+            ) : filteredPatients.length === 0 ? (
+              <EmptyState>No patient records match the current filters.</EmptyState>
             ) : (
               <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full min-w-[780px] border-collapse bg-white text-sm">
+                <table className="w-full min-w-[1180px] border-collapse bg-white text-sm">
                   <thead className="bg-muted">
                     <tr className="text-left">
                       <TableHead>Patient Name</TableHead>
@@ -411,17 +471,25 @@ function PatientsPage() {
                       <TableHead>Gender</TableHead>
                       <TableHead>Contact Number</TableHead>
                       <TableHead>Address</TableHead>
+                      <TableHead>Created At</TableHead>
+                      <TableHead>Created By</TableHead>
+                      <TableHead>Updated At</TableHead>
+                      <TableHead>Updated By</TableHead>
                       <TableHead>Actions</TableHead>
                     </tr>
                   </thead>
                   <tbody>
-                    {patients.map((patient) => (
+                    {filteredPatients.map((patient) => (
                       <tr key={patient.id} className="border-t border-border">
                         <TableCell className="font-semibold text-black">{patient.patientName}</TableCell>
                         <TableCell>{formatDateDisplay(patient.birthDate)}</TableCell>
                         <TableCell>{patient.gender}</TableCell>
                         <TableCell>{patient.contactNumber}</TableCell>
                         <TableCell>{patient.address}</TableCell>
+                        <TableCell>{formatDateTimeDisplay(patient.createdAt)}</TableCell>
+                        <TableCell>{patient.createdBy || 'admin'}</TableCell>
+                        <TableCell>{formatDateTimeDisplay(patient.updatedAt) || 'Not updated'}</TableCell>
+                        <TableCell>{patient.updatedBy || 'Not updated'}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Button
@@ -488,6 +556,20 @@ function formatDateDisplay(value) {
     year: 'numeric',
     month: 'short',
     day: '2-digit'
+  }).format(new Date(value))
+}
+
+function formatDateTimeDisplay(value) {
+  if (!value) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
   }).format(new Date(value))
 }
 

@@ -27,5 +27,12 @@ public class Patient
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    [Required]
+    [MaxLength(50)]
+    public string CreatedBy { get; set; } = string.Empty;
+
     public DateTime? UpdatedAt { get; set; }
+
+    [MaxLength(50)]
+    public string? UpdatedBy { get; set; }
 }

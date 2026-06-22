@@ -4,6 +4,7 @@ using ClinicPatient.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace ClinicPatient.Api.Controllers;
 
@@ -12,6 +13,8 @@ namespace ClinicPatient.Api.Controllers;
 [Route("api/[controller]")]
 public class PatientsController(AppDbContext dbContext) : ControllerBase
 {
+    private string CurrentUsername => User.FindFirstValue(ClaimTypes.Name) ?? "admin";
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Patient>>> GetPatients()
     {
@@ -45,7 +48,8 @@ public class PatientsController(AppDbContext dbContext) : ControllerBase
             Gender = request.Gender.Trim(),
             ContactNumber = request.ContactNumber.Trim(),
             Address = request.Address.Trim(),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = CurrentUsername
         };
 
         dbContext.Patients.Add(patient);
@@ -70,6 +74,7 @@ public class PatientsController(AppDbContext dbContext) : ControllerBase
         patient.ContactNumber = request.ContactNumber.Trim();
         patient.Address = request.Address.Trim();
         patient.UpdatedAt = DateTime.UtcNow;
+        patient.UpdatedBy = CurrentUsername;
 
         await dbContext.SaveChangesAsync();
 
