@@ -51,9 +51,9 @@ const emptyPatient = {
   address: ''
 }
 
-const inputGroupClass = 'grid gap-2'
+const inputGroupClass = 'grid gap-2.5'
 const selectClass =
-  'flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+  'flex h-11 w-full rounded-lg border border-input bg-white px-3.5 py-2.5 text-sm font-normal text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
 
 function ProtectedRoute({ children }) {
   return getToken() ? children : <Navigate to="/login" replace />
@@ -278,22 +278,22 @@ function PatientsPage() {
   const username = getUsername() || 'admin'
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-background">
       <header className="border-b border-border bg-white">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div className="flex items-center gap-4">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="flex items-center gap-3.5">
             <img
               src={cldhLogo}
               alt="Central Luzon Doctors' Hospital logo"
-              className="h-20 w-20 shrink-0 object-contain sm:h-24 sm:w-24"
+              className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20"
             />
             <div>
-              <h1 className="text-2xl font-semibold tracking-normal text-black sm:text-3xl">Patient Management</h1>
+              <h1 className="text-3xl font-bold tracking-normal text-black sm:text-4xl">Patient Management</h1>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="secondary" className="self-start lg:self-auto">
+              <Button type="button" variant="secondary" size="sm" className="self-start lg:self-auto">
                 <User size={16} aria-hidden="true" />
                 {username}
                 <ChevronDown size={15} aria-hidden="true" />
@@ -317,12 +317,12 @@ function PatientsPage() {
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8">
+      <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(360px,33%)_minmax(0,67%)] lg:px-8">
         <section className="grid gap-5">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
               <div>
-                <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
+                <CardDescription className="font-medium uppercase tracking-normal text-muted-foreground">
                   Patient form
                 </CardDescription>
                 <CardTitle>{isEditing ? 'Edit Patient' : 'Add Patient'}</CardTitle>
@@ -332,14 +332,14 @@ function PatientsPage() {
                   <X size={17} aria-hidden="true" />
                 </Button>
               ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-primary">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-primary">
                   <UserPlus size={17} aria-hidden="true" />
                 </div>
               )}
             </CardHeader>
 
             <CardContent>
-              <form className="grid gap-4" onSubmit={handleSubmit} aria-label="Patient form">
+              <form className="grid gap-5" onSubmit={handleSubmit} aria-label="Patient form">
                 <div className={inputGroupClass}>
                   <Label htmlFor="patientName">Patient Name</Label>
                   <Input
@@ -397,7 +397,7 @@ function PatientsPage() {
                   />
                 </div>
 
-                <Button type="submit" className="mt-1 w-full" disabled={saving}>
+                <Button type="submit" className="mt-1 h-12 w-full rounded-xl px-5" disabled={saving}>
                   {isEditing ? <Save size={17} aria-hidden="true" /> : <Plus size={17} aria-hidden="true" />}
                   {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Patient'}
                 </Button>
@@ -414,9 +414,9 @@ function PatientsPage() {
         </section>
 
         <Card className="min-w-0">
-          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0 pb-4">
             <div>
-              <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
+              <CardDescription className="font-medium uppercase tracking-normal text-muted-foreground">
                 {filteredPatients.length} of {patients.length} {patients.length === 1 ? 'record' : 'records'}
               </CardDescription>
               <CardTitle>Patient Records</CardTitle>
@@ -424,7 +424,7 @@ function PatientsPage() {
           </CardHeader>
 
           <CardContent className="grid gap-4">
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="grid items-center gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
               <div className="relative">
                 <Search
                   size={16}
@@ -462,9 +462,21 @@ function PatientsPage() {
             ) : filteredPatients.length === 0 ? (
               <EmptyState>No patient records match the current filters.</EmptyState>
             ) : (
-              <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full min-w-[1180px] border-collapse bg-white text-sm">
-                  <thead className="bg-muted">
+              <div className="overflow-x-auto rounded-xl border border-border bg-white">
+                <table className="w-full min-w-[1240px] border-collapse bg-white text-sm">
+                  <colgroup>
+                    <col className="w-[190px]" />
+                    <col className="w-[120px]" />
+                    <col className="w-[82px]" />
+                    <col className="w-[135px]" />
+                    <col className="w-[220px]" />
+                    <col className="w-[150px]" />
+                    <col className="w-[95px]" />
+                    <col className="w-[150px]" />
+                    <col className="w-[105px]" />
+                    <col className="w-[110px]" />
+                  </colgroup>
+                  <thead className="bg-[#F8FAFC]">
                     <tr className="text-left">
                       <TableHead>Patient Name</TableHead>
                       <TableHead>Birth Date</TableHead>
@@ -529,18 +541,22 @@ function PatientsPage() {
 
 function EmptyState({ children }) {
   return (
-    <div className="grid min-h-[220px] place-items-center rounded-md border border-dashed border-border bg-muted/50 px-4 text-center text-sm font-semibold text-muted-foreground">
+    <div className="grid min-h-[180px] place-items-center rounded-xl border border-dashed border-border bg-muted/50 px-4 text-center text-sm font-medium text-muted-foreground">
       {children}
     </div>
   )
 }
 
 function TableHead({ children }) {
-  return <th className="px-4 py-3 text-xs font-semibold uppercase tracking-normal text-muted-foreground">{children}</th>
+  return (
+    <th className="whitespace-nowrap px-5 py-3.5 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
+      {children}
+    </th>
+  )
 }
 
 function TableCell({ children, className = '' }) {
-  return <td className={`px-4 py-3 align-top text-foreground ${className}`}>{children}</td>
+  return <td className={`px-5 py-4 align-top font-normal leading-6 text-foreground ${className}`}>{children}</td>
 }
 
 function formatDateInput(value) {
