@@ -1,0 +1,15 @@
+{
+  "name": "clinic-patient-registration",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend/clinic-patient-client"
+  ],
+  "scripts": {
+    "dev": "npm run frontend:dev",
+    "build": "npm run frontend:build",
+    "frontend:dev": "npm --workspace frontend/clinic-patient-client run dev",
+    "frontend:build": "npm --workspace frontend/clinic-patient-client run build",
+    "frontend:preview": "npm --workspace frontend/clinic-patient-client run preview"
+  }
+}

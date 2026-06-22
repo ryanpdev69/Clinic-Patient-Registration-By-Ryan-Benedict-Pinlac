@@ -43,7 +43,15 @@ The backend targets `net10.0`.
 
 ## Backend Setup
 
-From the backend project folder:
+From the repository root:
+
+```bash
+dotnet restore
+dotnet build --no-restore
+dotnet run --project backend/ClinicPatient.Api
+```
+
+Or from the backend project folder:
 
 ```bash
 cd backend/ClinicPatient.Api
@@ -74,7 +82,14 @@ dotnet list package --vulnerable --include-transitive
 
 ## Frontend Setup
 
-From the frontend project folder:
+From the repository root:
+
+```bash
+npm install
+npm run dev
+```
+
+Or from the frontend project folder:
 
 ```bash
 cd frontend/clinic-patient-client
@@ -99,7 +114,6 @@ VITE_API_BASE_URL=http://localhost:5088/api
 To verify the production frontend build:
 
 ```bash
-npm ci
 npm run build
 ```
 
