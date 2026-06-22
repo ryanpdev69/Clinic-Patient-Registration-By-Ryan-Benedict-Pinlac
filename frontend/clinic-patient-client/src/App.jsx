@@ -80,7 +80,7 @@ function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-white px-4 py-10">
       <Card className="w-full max-w-[420px]">
         <CardHeader className="space-y-4">
-          <img src={cldhLogo} alt="Central Luzon Doctors' Hospital logo" className="h-20 w-20 object-contain" />
+          <img src={cldhLogo} alt="Central Luzon Doctors' Hospital logo" className="h-28 w-28 object-contain" />
           <div className="space-y-1">
             <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
               Clinic Patient Registration
@@ -247,7 +247,7 @@ function PatientsPage() {
             <img
               src={cldhLogo}
               alt="Central Luzon Doctors' Hospital logo"
-              className="h-14 w-14 shrink-0 object-contain"
+              className="h-20 w-20 shrink-0 object-contain sm:h-24 sm:w-24"
             />
             <div>
               <p className="text-sm font-semibold text-muted-foreground">Signed in as {getUsername() || 'admin'}</p>
