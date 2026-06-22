@@ -6,6 +6,10 @@ node_modules/
 dist/
 build/
 *.db
+*.db-shm
+*.db-wal
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 .env
 .env.local
