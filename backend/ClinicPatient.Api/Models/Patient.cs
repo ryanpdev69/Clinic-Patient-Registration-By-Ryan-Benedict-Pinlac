@@ -7,7 +7,7 @@ public class Patient
     public int Id { get; set; }
 
     [Required]
-    [MaxLength(120)]
+    [MaxLength(50)]
     public string PatientName { get; set; } = string.Empty;
 
     [Required]
@@ -18,11 +18,11 @@ public class Patient
     public string Gender { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(30)]
+    [MaxLength(11)]
     public string ContactNumber { get; set; } = string.Empty;
 
     [Required]
-    [MaxLength(250)]
+    [MaxLength(100)]
     public string Address { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

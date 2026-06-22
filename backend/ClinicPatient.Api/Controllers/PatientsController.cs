@@ -41,12 +41,25 @@ public class PatientsController(AppDbContext dbContext) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Patient>> CreatePatient(PatientRequest request)
     {
+        var patientName = request.PatientName.Trim();
+        var contactNumber = request.ContactNumber.Trim();
+
+        if (await dbContext.Patients.AnyAsync(patient => patient.PatientName == patientName))
+        {
+            return Conflict(new { message = "A patient with this name already exists." });
+        }
+
+        if (await dbContext.Patients.AnyAsync(patient => patient.ContactNumber == contactNumber))
+        {
+            return Conflict(new { message = "A patient with this contact number already exists." });
+        }
+
         var patient = new Patient
         {
-            PatientName = request.PatientName.Trim(),
+            PatientName = patientName,
             BirthDate = request.BirthDate!.Value,
             Gender = request.Gender.Trim(),
-            ContactNumber = request.ContactNumber.Trim(),
+            ContactNumber = contactNumber,
             Address = request.Address.Trim(),
             CreatedAt = DateTime.UtcNow,
             CreatedBy = CurrentUsername
@@ -68,10 +81,23 @@ public class PatientsController(AppDbContext dbContext) : ControllerBase
             return NotFound(new { message = "Patient not found." });
         }
 
-        patient.PatientName = request.PatientName.Trim();
+        var patientName = request.PatientName.Trim();
+        var contactNumber = request.ContactNumber.Trim();
+
+        if (await dbContext.Patients.AnyAsync(existingPatient => existingPatient.Id != id && existingPatient.PatientName == patientName))
+        {
+            return Conflict(new { message = "A patient with this name already exists." });
+        }
+
+        if (await dbContext.Patients.AnyAsync(existingPatient => existingPatient.Id != id && existingPatient.ContactNumber == contactNumber))
+        {
+            return Conflict(new { message = "A patient with this contact number already exists." });
+        }
+
+        patient.PatientName = patientName;
         patient.BirthDate = request.BirthDate!.Value;
         patient.Gender = request.Gender.Trim();
-        patient.ContactNumber = request.ContactNumber.Trim();
+        patient.ContactNumber = contactNumber;
         patient.Address = request.Address.Trim();
         patient.UpdatedAt = DateTime.UtcNow;
         patient.UpdatedBy = CurrentUsername;

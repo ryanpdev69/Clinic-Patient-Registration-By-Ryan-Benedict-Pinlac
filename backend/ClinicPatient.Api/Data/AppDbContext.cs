@@ -22,6 +22,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
         modelBuilder.Entity<Patient>()
+            .HasIndex(patient => patient.PatientName)
+            .IsUnique();
+
+        modelBuilder.Entity<Patient>()
+            .HasIndex(patient => patient.ContactNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<Patient>()
             .Property(patient => patient.CreatedAt)
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
     }

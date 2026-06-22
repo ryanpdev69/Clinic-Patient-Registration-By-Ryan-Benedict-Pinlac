@@ -5,20 +5,33 @@ import {
   Calendar,
   ChevronDown,
   Edit2,
+  Eye,
+  Hash,
   LogOut,
+  MapPin,
+  MoreHorizontal,
+  Phone,
   Plus,
   Save,
   Search,
   Shield,
   Trash2,
   User,
-  UserPlus,
-  X
+  UserCheck,
+  UserPlus
 } from 'react-feather'
 import cldhLogo from './cldh.png'
 import { Alert } from './components/ui/alert'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from './components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,9 +64,11 @@ const emptyPatient = {
   address: ''
 }
 
-const inputGroupClass = 'grid gap-2.5'
+const inputGroupClass = 'grid gap-2'
 const selectClass =
-  'flex h-11 w-full rounded-lg border border-input bg-white px-3.5 py-2.5 text-sm font-normal text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+  'flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+const todayDate = formatDateInput(new Date().toISOString())
+const oldestAllowedBirthDate = formatDateInput(getDateYearsAgo(120).toISOString())
 
 function ProtectedRoute({ children }) {
   return getToken() ? children : <Navigate to="/login" replace />
@@ -147,15 +162,21 @@ function PatientsPage() {
   const navigate = useNavigate()
   const [patients, setPatients] = useState([])
   const [form, setForm] = useState(emptyPatient)
-  const [editingId, setEditingId] = useState(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [createdDateFilter, setCreatedDateFilter] = useState('')
+  const [formErrors, setFormErrors] = useState({})
+  const [editPatient, setEditPatient] = useState(null)
+  const [editForm, setEditForm] = useState(emptyPatient)
+  const [editFormErrors, setEditFormErrors] = useState({})
+  const [detailPatient, setDetailPatient] = useState(null)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
 
-  const isEditing = useMemo(() => editingId !== null, [editingId])
   const filteredPatients = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase()
 
@@ -206,12 +227,24 @@ function PatientsPage() {
   }
 
   function updateField(field, value) {
-    setForm((currentForm) => ({ ...currentForm, [field]: value }))
+    setForm((currentForm) => {
+      const nextForm = { ...currentForm, [field]: value }
+
+      setFormErrors((currentErrors) => {
+        if (Object.keys(currentErrors).length === 0) {
+          return currentErrors
+        }
+
+        return validatePatientForm(nextForm, patients)
+      })
+
+      return nextForm
+    })
   }
 
   function startEdit(patient) {
-    setEditingId(patient.id)
-    setForm({
+    setEditPatient(patient)
+    setEditForm({
       patientName: patient.patientName,
       birthDate: formatDateInput(patient.birthDate),
       gender: patient.gender,
@@ -219,26 +252,53 @@ function PatientsPage() {
       address: patient.address
     })
     setError('')
+    setEditFormErrors({})
   }
 
   function resetForm() {
     setForm(emptyPatient)
-    setEditingId(null)
     setError('')
+    setFormErrors({})
+  }
+
+  function closeEditModal() {
+    setEditPatient(null)
+    setEditForm(emptyPatient)
+    setEditFormErrors({})
+  }
+
+  function updateEditField(field, value) {
+    setEditForm((currentForm) => {
+      const nextForm = { ...currentForm, [field]: value }
+
+      setEditFormErrors((currentErrors) => {
+        if (Object.keys(currentErrors).length === 0) {
+          return currentErrors
+        }
+
+        return validatePatientForm(nextForm, patients, editPatient?.id)
+      })
+
+      return nextForm
+    })
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
-    setSaving(true)
     setError('')
 
-    try {
-      if (isEditing) {
-        await updatePatient(editingId, form)
-      } else {
-        await createPatient(form)
-      }
+    const validationErrors = validatePatientForm(form, patients)
 
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors)
+      return
+    }
+
+    setSaving(true)
+    setFormErrors({})
+
+    try {
+      await createPatient(form)
       resetForm()
       await loadPatients()
     } catch (requestError) {
@@ -248,21 +308,53 @@ function PatientsPage() {
     }
   }
 
-  async function handleDelete(patient) {
-    const confirmed = window.confirm(`Delete patient record for ${patient.patientName}?`)
-    if (!confirmed) {
+  async function handleEditSubmit(event) {
+    event.preventDefault()
+    setError('')
+
+    if (!editPatient) {
       return
     }
 
-    setDeletingId(patient.id)
+    const validationErrors = validatePatientForm(editForm, patients, editPatient.id)
+
+    if (Object.keys(validationErrors).length > 0) {
+      setEditFormErrors(validationErrors)
+      return
+    }
+
+    setEditSaving(true)
+    setEditFormErrors({})
+
+    try {
+      await updatePatient(editPatient.id, editForm)
+      closeEditModal()
+      await loadPatients()
+    } catch (requestError) {
+      handleRequestError(requestError)
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) {
+      return
+    }
+
+    setDeletingId(deleteTarget.id)
     setError('')
 
     try {
-      await deletePatient(patient.id)
+      await deletePatient(deleteTarget.id)
       await loadPatients()
-      if (editingId === patient.id) {
-        resetForm()
+      if (editPatient?.id === deleteTarget.id) {
+        closeEditModal()
       }
+      if (detailPatient?.id === deleteTarget.id) {
+        setDetailPatient(null)
+      }
+      setDeleteTarget(null)
     } catch (requestError) {
       handleRequestError(requestError)
     } finally {
@@ -270,7 +362,7 @@ function PatientsPage() {
     }
   }
 
-  async function handleLogout() {
+  async function confirmLogout() {
     await logout()
     navigate('/login', { replace: true })
   }
@@ -278,22 +370,22 @@ function PatientsPage() {
   const username = getUsername() || 'admin'
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-white">
       <header className="border-b border-border bg-white">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div className="flex items-center gap-3.5">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-2 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="flex items-center gap-3">
             <img
               src={cldhLogo}
               alt="Central Luzon Doctors' Hospital logo"
-              className="h-16 w-16 shrink-0 object-contain sm:h-20 sm:w-20"
+              className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16"
             />
             <div>
-              <h1 className="text-3xl font-bold tracking-normal text-black sm:text-4xl">Patient Management</h1>
+              <h1 className="text-2xl font-semibold tracking-normal text-black sm:text-3xl">Patient Management</h1>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="secondary" size="sm" className="self-start lg:self-auto">
+              <Button type="button" variant="secondary" className="self-start lg:self-auto">
                 <User size={16} aria-hidden="true" />
                 {username}
                 <ChevronDown size={15} aria-hidden="true" />
@@ -306,7 +398,7 @@ function PatientsPage() {
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onSelect={handleLogout}
+                onSelect={() => setLogoutConfirmOpen(true)}
                 className="text-destructive focus:bg-red-50 focus:text-destructive"
               >
                 <LogOut size={16} aria-hidden="true" />
@@ -317,37 +409,36 @@ function PatientsPage() {
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(360px,33%)_minmax(0,67%)] lg:px-8">
+      <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8">
         <section className="grid gap-5">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-4">
+            <CardHeader className="flex-row items-center justify-between space-y-0">
               <div>
-                <CardDescription className="font-medium uppercase tracking-normal text-muted-foreground">
+                <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
                   Patient form
                 </CardDescription>
-                <CardTitle>{isEditing ? 'Edit Patient' : 'Add Patient'}</CardTitle>
+                <CardTitle>Add Patient</CardTitle>
               </div>
-              {isEditing ? (
-                <Button type="button" variant="ghost" size="icon" onClick={resetForm} title="Cancel edit">
-                  <X size={17} aria-hidden="true" />
-                </Button>
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-primary">
-                  <UserPlus size={17} aria-hidden="true" />
-                </div>
-              )}
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-primary">
+                <UserPlus size={17} aria-hidden="true" />
+              </div>
             </CardHeader>
 
             <CardContent>
-              <form className="grid gap-5" onSubmit={handleSubmit} aria-label="Patient form">
+              <form className="grid gap-4" onSubmit={handleSubmit} aria-label="Patient form">
                 <div className={inputGroupClass}>
                   <Label htmlFor="patientName">Patient Name</Label>
                   <Input
                     id="patientName"
                     value={form.patientName}
-                    onChange={(event) => updateField('patientName', event.target.value)}
+                    onChange={(event) => updateField('patientName', formatPatientNameInput(event.target.value))}
+                    maxLength={50}
+                    placeholder="Juan Dela Cruz"
+                    aria-invalid={Boolean(formErrors.patientName)}
+                    aria-describedby="patientName-error"
                     required
                   />
+                  <FieldError id="patientName-error" message={formErrors.patientName} />
                 </div>
 
                 <div className={inputGroupClass}>
@@ -357,8 +448,13 @@ function PatientsPage() {
                     type="date"
                     value={form.birthDate}
                     onChange={(event) => updateField('birthDate', event.target.value)}
+                    min={oldestAllowedBirthDate}
+                    max={todayDate}
+                    aria-invalid={Boolean(formErrors.birthDate)}
+                    aria-describedby="birthDate-error"
                     required
                   />
+                  <FieldError id="birthDate-error" message={formErrors.birthDate} />
                 </div>
 
                 <div className={inputGroupClass}>
@@ -368,13 +464,15 @@ function PatientsPage() {
                     className={selectClass}
                     value={form.gender}
                     onChange={(event) => updateField('gender', event.target.value)}
+                    aria-invalid={Boolean(formErrors.gender)}
+                    aria-describedby="gender-error"
                     required
                   >
                     <option value="">Select gender</option>
                     <option value="Female">Female</option>
                     <option value="Male">Male</option>
-                    <option value="Other">Other</option>
                   </select>
+                  <FieldError id="gender-error" message={formErrors.gender} />
                 </div>
 
                 <div className={inputGroupClass}>
@@ -382,9 +480,18 @@ function PatientsPage() {
                   <Input
                     id="contactNumber"
                     value={form.contactNumber}
-                    onChange={(event) => updateField('contactNumber', event.target.value)}
+                    onChange={(event) =>
+                      updateField('contactNumber', formatContactNumberInput(event.target.value, form.contactNumber))
+                    }
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={11}
+                    placeholder="09123456789"
+                    aria-invalid={Boolean(formErrors.contactNumber)}
+                    aria-describedby="contactNumber-error"
                     required
                   />
+                  <FieldError id="contactNumber-error" message={formErrors.contactNumber} />
                 </div>
 
                 <div className={inputGroupClass}>
@@ -392,14 +499,19 @@ function PatientsPage() {
                   <Textarea
                     id="address"
                     value={form.address}
-                    onChange={(event) => updateField('address', event.target.value)}
+                    onChange={(event) => updateField('address', formatAddressInput(event.target.value))}
+                    maxLength={100}
+                    placeholder="123 Mabini St. Tarlac City"
+                    aria-invalid={Boolean(formErrors.address)}
+                    aria-describedby="address-error"
                     required
                   />
+                  <FieldError id="address-error" message={formErrors.address} />
                 </div>
 
-                <Button type="submit" className="mt-1 h-12 w-full rounded-xl px-5" disabled={saving}>
-                  {isEditing ? <Save size={17} aria-hidden="true" /> : <Plus size={17} aria-hidden="true" />}
-                  {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Patient'}
+                <Button type="submit" className="mt-1 w-full" disabled={saving}>
+                  <Plus size={17} aria-hidden="true" />
+                  {saving ? 'Saving...' : 'Add Patient'}
                 </Button>
               </form>
             </CardContent>
@@ -414,9 +526,9 @@ function PatientsPage() {
         </section>
 
         <Card className="min-w-0">
-          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0 pb-4">
+          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
             <div>
-              <CardDescription className="font-medium uppercase tracking-normal text-muted-foreground">
+              <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
                 {filteredPatients.length} of {patients.length} {patients.length === 1 ? 'record' : 'records'}
               </CardDescription>
               <CardTitle>Patient Records</CardTitle>
@@ -424,7 +536,7 @@ function PatientsPage() {
           </CardHeader>
 
           <CardContent className="grid gap-4">
-            <div className="grid items-center gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
               <div className="relative">
                 <Search
                   size={16}
@@ -462,31 +574,15 @@ function PatientsPage() {
             ) : filteredPatients.length === 0 ? (
               <EmptyState>No patient records match the current filters.</EmptyState>
             ) : (
-              <div className="overflow-x-auto rounded-xl border border-border bg-white">
-                <table className="w-full min-w-[1240px] border-collapse bg-white text-sm">
-                  <colgroup>
-                    <col className="w-[190px]" />
-                    <col className="w-[120px]" />
-                    <col className="w-[82px]" />
-                    <col className="w-[135px]" />
-                    <col className="w-[220px]" />
-                    <col className="w-[150px]" />
-                    <col className="w-[95px]" />
-                    <col className="w-[150px]" />
-                    <col className="w-[105px]" />
-                    <col className="w-[110px]" />
-                  </colgroup>
-                  <thead className="bg-[#F8FAFC]">
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full min-w-[760px] border-collapse bg-white text-sm">
+                  <thead className="bg-muted">
                     <tr className="text-left">
                       <TableHead>Patient Name</TableHead>
                       <TableHead>Birth Date</TableHead>
                       <TableHead>Gender</TableHead>
                       <TableHead>Contact Number</TableHead>
                       <TableHead>Address</TableHead>
-                      <TableHead>Created At</TableHead>
-                      <TableHead>Created By</TableHead>
-                      <TableHead>Updated At</TableHead>
-                      <TableHead>Updated By</TableHead>
                       <TableHead>Actions</TableHead>
                     </tr>
                   </thead>
@@ -498,33 +594,32 @@ function PatientsPage() {
                         <TableCell>{patient.gender}</TableCell>
                         <TableCell>{patient.contactNumber}</TableCell>
                         <TableCell>{patient.address}</TableCell>
-                        <TableCell>{formatDateTimeDisplay(patient.createdAt)}</TableCell>
-                        <TableCell>{patient.createdBy || 'admin'}</TableCell>
-                        <TableCell>{formatDateTimeDisplay(patient.updatedAt) || 'Not updated'}</TableCell>
-                        <TableCell>{patient.updatedBy || 'Not updated'}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="secondary"
-                              size="icon"
-                              onClick={() => startEdit(patient)}
-                              title="Edit patient"
-                            >
-                              <Edit2 size={15} aria-hidden="true" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:bg-red-50 hover:text-destructive"
-                              onClick={() => handleDelete(patient)}
-                              disabled={deletingId === patient.id}
-                              title="Delete patient"
-                            >
-                              <Trash2 size={15} aria-hidden="true" />
-                            </Button>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button type="button" variant="ghost" size="icon" title="Patient actions">
+                                <MoreHorizontal size={16} aria-hidden="true" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onSelect={() => setDetailPatient(patient)}>
+                                <Eye size={16} aria-hidden="true" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => startEdit(patient)}>
+                                <Edit2 size={16} aria-hidden="true" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onSelect={() => setDeleteTarget(patient)}
+                                className="text-destructive focus:bg-red-50 focus:text-destructive"
+                              >
+                                <Trash2 size={16} aria-hidden="true" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </tr>
                     ))}
@@ -535,28 +630,454 @@ function PatientsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={Boolean(editPatient)} onOpenChange={(open) => !open && closeEditModal()}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Edit Patient</DialogTitle>
+            <DialogDescription>Update the selected patient record.</DialogDescription>
+          </DialogHeader>
+
+          <form className="grid gap-4" onSubmit={handleEditSubmit}>
+            <div className={inputGroupClass}>
+              <Label htmlFor="editPatientName">Patient Name</Label>
+              <Input
+                id="editPatientName"
+                value={editForm.patientName}
+                onChange={(event) => updateEditField('patientName', formatPatientNameInput(event.target.value))}
+                maxLength={50}
+                placeholder="Juan Dela Cruz"
+                aria-invalid={Boolean(editFormErrors.patientName)}
+                aria-describedby="editPatientName-error"
+                required
+              />
+              <FieldError id="editPatientName-error" message={editFormErrors.patientName} />
+            </div>
+
+            <div className={inputGroupClass}>
+              <Label htmlFor="editBirthDate">Birth Date</Label>
+              <Input
+                id="editBirthDate"
+                type="date"
+                value={editForm.birthDate}
+                onChange={(event) => updateEditField('birthDate', event.target.value)}
+                min={oldestAllowedBirthDate}
+                max={todayDate}
+                aria-invalid={Boolean(editFormErrors.birthDate)}
+                aria-describedby="editBirthDate-error"
+                required
+              />
+              <FieldError id="editBirthDate-error" message={editFormErrors.birthDate} />
+            </div>
+
+            <div className={inputGroupClass}>
+              <Label htmlFor="editGender">Gender</Label>
+              <select
+                id="editGender"
+                className={selectClass}
+                value={editForm.gender}
+                onChange={(event) => updateEditField('gender', event.target.value)}
+                aria-invalid={Boolean(editFormErrors.gender)}
+                aria-describedby="editGender-error"
+                required
+              >
+                <option value="">Select gender</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+              <FieldError id="editGender-error" message={editFormErrors.gender} />
+            </div>
+
+            <div className={inputGroupClass}>
+              <Label htmlFor="editContactNumber">Contact Number</Label>
+              <Input
+                id="editContactNumber"
+                value={editForm.contactNumber}
+                onChange={(event) =>
+                  updateEditField('contactNumber', formatContactNumberInput(event.target.value, editForm.contactNumber))
+                }
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={11}
+                placeholder="09123456789"
+                aria-invalid={Boolean(editFormErrors.contactNumber)}
+                aria-describedby="editContactNumber-error"
+                required
+              />
+              <FieldError id="editContactNumber-error" message={editFormErrors.contactNumber} />
+            </div>
+
+            <div className={inputGroupClass}>
+              <Label htmlFor="editAddress">Address</Label>
+              <Textarea
+                id="editAddress"
+                value={editForm.address}
+                onChange={(event) => updateEditField('address', formatAddressInput(event.target.value))}
+                maxLength={100}
+                placeholder="123 Mabini St. Tarlac City"
+                aria-invalid={Boolean(editFormErrors.address)}
+                aria-describedby="editAddress-error"
+                required
+              />
+              <FieldError id="editAddress-error" message={editFormErrors.address} />
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="secondary" onClick={closeEditModal}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={editSaving}>
+                <Save size={17} aria-hidden="true" />
+                {editSaving ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(detailPatient)} onOpenChange={(open) => !open && setDetailPatient(null)}>
+        <DialogContent className="max-w-2xl gap-5 p-0">
+          <DialogHeader className="border-b border-border px-6 pb-5 pt-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <User size={22} aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <DialogTitle>Patient Record</DialogTitle>
+                <DialogDescription>Review patient information</DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {detailPatient && (
+            <div className="grid gap-6 px-6">
+              <div className="flex items-center gap-4 rounded-xl bg-muted/50 px-4 py-4">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-sm">
+                  <User size={24} aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="truncate text-xl font-semibold text-black">{detailPatient.patientName}</h3>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <GenderChip gender={detailPatient.gender} />
+                    <span>Born {formatLongDateDisplay(detailPatient.birthDate)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <DetailSection title="Personal">
+                <DetailRow icon={Hash} label="Patient ID" value={formatPatientId(detailPatient.id)} />
+                <DetailRow icon={User} label="Patient Name" value={detailPatient.patientName} />
+                <DetailRow icon={Calendar} label="Birth Date" value={formatLongDateDisplay(detailPatient.birthDate)} />
+                <DetailRow icon={UserCheck} label="Gender" value={<GenderChip gender={detailPatient.gender} />} />
+              </DetailSection>
+
+              <DetailSection title="Contact">
+                <DetailRow icon={Phone} label="Contact Number" value={detailPatient.contactNumber} />
+                <DetailRow icon={MapPin} label="Address" value={detailPatient.address} />
+              </DetailSection>
+
+              <DetailSection title="System">
+                <DetailRow icon={UserCheck} label="Created By" value={detailPatient.createdBy || 'admin'} />
+                <DetailRow icon={Calendar} label="Created At" value={formatCleanDateTimeDisplay(detailPatient.createdAt)} />
+                <DetailRow icon={UserCheck} label="Updated By" value={detailPatient.updatedBy || 'Not updated'} />
+                <DetailRow
+                  icon={Calendar}
+                  label="Updated At"
+                  value={formatCleanDateTimeDisplay(detailPatient.updatedAt) || 'Not updated'}
+                />
+              </DetailSection>
+            </div>
+          )}
+
+          <DialogFooter className="border-t border-border px-6 pb-6 pt-4 sm:items-center sm:justify-between">
+            <div className="text-left text-sm text-muted-foreground">
+              <span className="block font-medium text-foreground">Last Updated</span>
+              <span>{formatCleanDateTimeDisplay(detailPatient?.updatedAt || detailPatient?.createdAt)}</span>
+            </div>
+            <Button type="button" onClick={() => setDetailPatient(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Patient</DialogTitle>
+            <DialogDescription>
+              {deleteTarget
+                ? `Delete the patient record for ${deleteTarget.patientName}? This action cannot be undone.`
+                : 'Delete this patient record?'}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteTarget ? deletingId === deleteTarget.id : false}
+            >
+              <Trash2 size={17} aria-hidden="true" />
+              {deleteTarget && deletingId === deleteTarget.id ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Logout</DialogTitle>
+            <DialogDescription>Are you sure you want to log out of this account?</DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setLogoutConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={confirmLogout}>
+              <LogOut size={17} aria-hidden="true" />
+              Logout
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }
 
 function EmptyState({ children }) {
   return (
-    <div className="grid min-h-[180px] place-items-center rounded-xl border border-dashed border-border bg-muted/50 px-4 text-center text-sm font-medium text-muted-foreground">
+    <div className="grid min-h-[220px] place-items-center rounded-md border border-dashed border-border bg-muted/50 px-4 text-center text-sm font-semibold text-muted-foreground">
       {children}
     </div>
   )
 }
 
 function TableHead({ children }) {
-  return (
-    <th className="whitespace-nowrap px-5 py-3.5 text-xs font-semibold uppercase tracking-normal text-muted-foreground">
-      {children}
-    </th>
-  )
+  return <th className="px-4 py-3 text-xs font-semibold uppercase tracking-normal text-muted-foreground">{children}</th>
 }
 
 function TableCell({ children, className = '' }) {
-  return <td className={`px-5 py-4 align-top font-normal leading-6 text-foreground ${className}`}>{children}</td>
+  return <td className={`px-4 py-3 align-top text-foreground ${className}`}>{children}</td>
+}
+
+function FieldError({ id, message }) {
+  if (!message) {
+    return null
+  }
+
+  return (
+    <p id={id} className="text-sm font-medium text-destructive">
+      {message}
+    </p>
+  )
+}
+
+function DetailSection({ title, children }) {
+  return (
+    <section className="grid gap-3">
+      <div className="flex items-center gap-3">
+        <h4 className="text-xs font-semibold uppercase tracking-normal text-muted-foreground">{title}</h4>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+      <div className="divide-y divide-border rounded-lg">
+        {children}
+      </div>
+    </section>
+  )
+}
+
+function DetailRow({ icon: Icon, label, value }) {
+  return (
+    <div className="grid gap-2 py-3 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-start">
+      <span className="flex items-center gap-2 text-[13px] font-medium text-muted-foreground">
+        <Icon size={15} aria-hidden="true" />
+        {label}
+      </span>
+      <span className="break-words text-[15px] font-semibold text-foreground">{value || 'Not provided'}</span>
+    </div>
+  )
+}
+
+function GenderChip({ gender }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+      {gender || 'Not provided'}
+    </span>
+  )
+}
+
+function validatePatientForm(patient, existingPatients = [], currentPatientId = null) {
+  const errors = {}
+  const today = new Date(`${todayDate}T00:00:00`)
+  const oldestAllowed = new Date(`${oldestAllowedBirthDate}T00:00:00`)
+  const normalizedPatientName = patient.patientName.trim().toLocaleLowerCase('en-PH')
+  const normalizedContactNumber = patient.contactNumber.trim()
+
+  if (!patient.patientName.trim()) {
+    errors.patientName = 'Patient name is required.'
+  } else if (patient.patientName.length > 50) {
+    errors.patientName = 'Patient name must be 50 characters or fewer.'
+  } else if (!/^\p{L}[\p{L}.]*(?: \p{L}[\p{L}.]*)*$/u.test(patient.patientName)) {
+    errors.patientName = 'Use letters, spaces, or periods only. The name must start with a letter.'
+  } else if (
+    existingPatients.some(
+      (existingPatient) =>
+        existingPatient.id !== currentPatientId &&
+        existingPatient.patientName.trim().toLocaleLowerCase('en-PH') === normalizedPatientName
+    )
+  ) {
+    errors.patientName = 'A patient with this name already exists.'
+  }
+
+  if (!patient.birthDate) {
+    errors.birthDate = 'Birth date is required.'
+  } else {
+    const birthDate = new Date(`${patient.birthDate}T00:00:00`)
+
+    if (birthDate > today) {
+      errors.birthDate = 'Birth date cannot be in the future.'
+    } else if (birthDate < oldestAllowed) {
+      errors.birthDate = 'Birth date cannot be more than 120 years ago.'
+    }
+  }
+
+  if (!['Female', 'Male'].includes(patient.gender)) {
+    errors.gender = 'Please select Female or Male.'
+  }
+
+  if (!patient.contactNumber) {
+    errors.contactNumber = 'Contact number is required.'
+  } else if (!/^09/.test(patient.contactNumber)) {
+    errors.contactNumber = 'Contact number must start with 09.'
+  } else if (!/^09\d{9}$/.test(patient.contactNumber)) {
+    errors.contactNumber = 'Contact number must be exactly 11 digits.'
+  } else if (
+    existingPatients.some(
+      (existingPatient) =>
+        existingPatient.id !== currentPatientId && existingPatient.contactNumber.trim() === normalizedContactNumber
+    )
+  ) {
+    errors.contactNumber = 'A patient with this contact number already exists.'
+  }
+
+  if (!patient.address.trim()) {
+    errors.address = 'Address is required.'
+  } else if (patient.address.length > 100) {
+    errors.address = 'Address must be 100 characters or fewer.'
+  } else if (!/^[\p{L}\d. ]+$/u.test(patient.address)) {
+    errors.address = 'Address can contain only letters, numbers, spaces, or periods.'
+  } else if (!/\p{L}/u.test(patient.address)) {
+    errors.address = 'Address must include at least one letter.'
+  }
+
+  return errors
+}
+
+function formatPatientNameInput(value) {
+  const allowedCharacters = Array.from(value)
+    .filter((character) => /[\p{L}. ]/u.test(character))
+    .join('')
+    .replace(/\s+/g, ' ')
+    .replace(/^\s+/, '')
+
+  const formattedValue = allowedCharacters
+    .split(' ')
+    .map((word) => {
+      const cleanedWord = word.replace(/^\.+/, '')
+
+      if (!cleanedWord) {
+        return ''
+      }
+
+      let hasCapitalizedFirstLetter = false
+
+      return Array.from(cleanedWord)
+        .map((character) => {
+          if (!/\p{L}/u.test(character)) {
+            return character
+          }
+
+          if (!hasCapitalizedFirstLetter) {
+            hasCapitalizedFirstLetter = true
+            return character.toLocaleUpperCase('en-PH')
+          }
+
+          return character.toLocaleLowerCase('en-PH')
+        })
+        .join('')
+    })
+    .join(' ')
+
+  return formattedValue.slice(0, 50)
+}
+
+function formatAddressInput(value) {
+  const allowedCharacters = Array.from(value)
+    .filter((character) => /[\p{L}\d. ]/u.test(character))
+    .join('')
+    .replace(/\s+/g, ' ')
+    .replace(/^\s+/, '')
+
+  const formattedValue = allowedCharacters
+    .split(' ')
+    .map((word) => {
+      const cleanedWord = word.replace(/^\.+/, '')
+
+      if (!cleanedWord) {
+        return ''
+      }
+
+      let hasCapitalizedFirstLetter = false
+
+      return Array.from(cleanedWord)
+        .map((character) => {
+          if (!/\p{L}/u.test(character)) {
+            return character
+          }
+
+          if (!hasCapitalizedFirstLetter) {
+            hasCapitalizedFirstLetter = true
+            return character.toLocaleUpperCase('en-PH')
+          }
+
+          return character.toLocaleLowerCase('en-PH')
+        })
+        .join('')
+    })
+    .join(' ')
+
+  return formattedValue.slice(0, 100)
+}
+
+function formatContactNumberInput(value, previousValue) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+
+  if (!digits) {
+    return ''
+  }
+
+  if (digits[0] !== '0') {
+    return previousValue
+  }
+
+  if (digits.length >= 2 && digits[1] !== '9') {
+    return previousValue
+  }
+
+  return digits
+}
+
+function getDateYearsAgo(years) {
+  const date = new Date()
+  date.setFullYear(date.getFullYear() - years)
+  return date
 }
 
 function formatDateInput(value) {
@@ -575,6 +1096,18 @@ function formatDateDisplay(value) {
   }).format(new Date(value))
 }
 
+function formatLongDateDisplay(value) {
+  if (!value) {
+    return ''
+  }
+
+  return new Intl.DateTimeFormat('en-PH', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  }).format(new Date(value))
+}
+
 function formatDateTimeDisplay(value) {
   if (!value) {
     return ''
@@ -587,6 +1120,29 @@ function formatDateTimeDisplay(value) {
     hour: '2-digit',
     minute: '2-digit'
   }).format(new Date(value))
+}
+
+function formatCleanDateTimeDisplay(value) {
+  if (!value) {
+    return ''
+  }
+
+  const date = new Date(value)
+  const formattedDate = new Intl.DateTimeFormat('en-PH', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit'
+  }).format(date)
+  const formattedTime = new Intl.DateTimeFormat('en-PH', {
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(date)
+
+  return `${formattedDate} - ${formattedTime}`
+}
+
+function formatPatientId(id) {
+  return `PAT-${String(id).padStart(6, '0')}`
 }
 
 export default function App() {
