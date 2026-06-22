@@ -10,9 +10,9 @@ import {
   Shield,
   Trash2,
   UserPlus,
-  Users,
   X
 } from 'react-feather'
+import cldhLogo from './cldh.png'
 import { Alert } from './components/ui/alert'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
@@ -80,9 +80,7 @@ function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-white px-4 py-10">
       <Card className="w-full max-w-[420px]">
         <CardHeader className="space-y-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Shield size={22} aria-hidden="true" />
-          </div>
+          <img src={cldhLogo} alt="Central Luzon Doctors' Hospital logo" className="h-20 w-20 object-contain" />
           <div className="space-y-1">
             <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
               Clinic Patient Registration
@@ -246,9 +244,11 @@ function PatientsPage() {
       <header className="border-b border-border bg-white">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
           <div className="flex items-center gap-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Users size={21} aria-hidden="true" />
-            </div>
+            <img
+              src={cldhLogo}
+              alt="Central Luzon Doctors' Hospital logo"
+              className="h-14 w-14 shrink-0 object-contain"
+            />
             <div>
               <p className="text-sm font-semibold text-muted-foreground">Signed in as {getUsername() || 'admin'}</p>
               <h1 className="text-2xl font-semibold tracking-normal text-black sm:text-3xl">Patient Management</h1>
