@@ -36,10 +36,10 @@ ClinicPatientRegistration/
 
 ## Prerequisites
 
-- .NET 8 SDK
+- .NET 10 SDK
 - Node.js and npm
 
-This repository was created in an environment where Node/npm were available, but `dotnet` was not on PATH. Install the .NET 8 SDK before running or building the backend.
+The backend targets `net10.0`.
 
 ## Backend Setup
 
@@ -62,7 +62,15 @@ The API uses SQLite with this default connection string:
 Data Source=clinicpatients.db
 ```
 
-The database file is created locally when the API starts. SQLite database files are ignored by Git.
+The database file is created locally when the API starts. EF Core migrations are applied automatically at startup, and the default admin account is seeded if it does not already exist. SQLite database files are ignored by Git.
+
+Useful backend verification commands:
+
+```bash
+dotnet restore
+dotnet build --no-restore
+dotnet list package --vulnerable --include-transitive
+```
 
 ## Frontend Setup
 
@@ -87,6 +95,13 @@ VITE_API_BASE_URL=http://localhost:5088/api
 ```
 
 `.env` files are ignored by Git.
+
+To verify the production frontend build:
+
+```bash
+npm ci
+npm run build
+```
 
 ## Default Login
 
