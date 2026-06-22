@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import {
   AlertCircle,
+  ChevronDown,
   Edit2,
   LogOut,
   Plus,
-  RefreshCw,
   Save,
   Shield,
   Trash2,
+  User,
   UserPlus,
   X
 } from 'react-feather'
@@ -16,6 +17,14 @@ import cldhLogo from './cldh.png'
 import { Alert } from './components/ui/alert'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from './components/ui/dropdown-menu'
 import { Input } from './components/ui/input'
 import { Label } from './components/ui/label'
 import { Textarea } from './components/ui/textarea'
@@ -239,6 +248,8 @@ function PatientsPage() {
     navigate('/login', { replace: true })
   }
 
+  const username = getUsername() || 'admin'
+
   return (
     <main className="min-h-screen bg-white">
       <header className="border-b border-border bg-white">
@@ -250,20 +261,32 @@ function PatientsPage() {
               className="h-20 w-20 shrink-0 object-contain sm:h-24 sm:w-24"
             />
             <div>
-              <p className="text-sm font-semibold text-muted-foreground">Signed in as {getUsername() || 'admin'}</p>
               <h1 className="text-2xl font-semibold tracking-normal text-black sm:text-3xl">Patient Management</h1>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="secondary" onClick={loadPatients} disabled={loading}>
-              <RefreshCw size={16} aria-hidden="true" className={loading ? 'animate-spin' : ''} />
-              {loading ? 'Loading...' : 'Refresh'}
-            </Button>
-            <Button type="button" onClick={handleLogout}>
-              <LogOut size={16} aria-hidden="true" />
-              Logout
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="secondary" className="self-start lg:self-auto">
+                <User size={16} aria-hidden="true" />
+                {username}
+                <ChevronDown size={15} aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>
+                <span className="block text-xs font-semibold uppercase text-muted-foreground">Logged in as</span>
+                <span className="block text-base text-black">{username}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={handleLogout}
+                className="text-destructive focus:bg-red-50 focus:text-destructive"
+              >
+                <LogOut size={16} aria-hidden="true" />
+                Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
