@@ -1,6 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
-import { LogOut, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
+import {
+  AlertCircle,
+  Edit2,
+  LogOut,
+  Plus,
+  RefreshCw,
+  Save,
+  Shield,
+  Trash2,
+  UserPlus,
+  Users,
+  X
+} from 'react-feather'
+import { Alert } from './components/ui/alert'
+import { Button } from './components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import { Input } from './components/ui/input'
+import { Label } from './components/ui/label'
+import { Textarea } from './components/ui/textarea'
 import {
   clearSession,
   createPatient,
@@ -21,6 +39,10 @@ const emptyPatient = {
   contactNumber: '',
   address: ''
 }
+
+const inputGroupClass = 'grid gap-2'
+const selectClass =
+  'flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
 
 function ProtectedRoute({ children }) {
   return getToken() ? children : <Navigate to="/login" replace />
@@ -55,42 +77,59 @@ function LoginPage() {
   }
 
   return (
-    <main className="login-shell">
-      <section className="login-panel" aria-labelledby="login-title">
-        <div>
-          <p className="eyebrow">Clinic Patient Registration</p>
-          <h1 id="login-title">Sign in</h1>
-        </div>
+    <main className="flex min-h-screen items-center justify-center bg-white px-4 py-10">
+      <Card className="w-full max-w-[420px]">
+        <CardHeader className="space-y-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <Shield size={22} aria-hidden="true" />
+          </div>
+          <div className="space-y-1">
+            <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
+              Clinic Patient Registration
+            </CardDescription>
+            <CardTitle className="text-3xl text-black">Sign in</CardTitle>
+          </div>
+        </CardHeader>
 
-        <form onSubmit={handleSubmit} className="stack">
-          {error && <div className="alert error">{error}</div>}
+        <CardContent>
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            {error && (
+              <Alert variant="destructive" className="flex items-start gap-3 font-medium">
+                <AlertCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+                <span>{error}</span>
+              </Alert>
+            )}
 
-          <label>
-            Username
-            <input
-              value={form.username}
-              onChange={(event) => setForm({ ...form, username: event.target.value })}
-              autoComplete="username"
-              required
-            />
-          </label>
+            <div className={inputGroupClass}>
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                value={form.username}
+                onChange={(event) => setForm({ ...form, username: event.target.value })}
+                autoComplete="username"
+                required
+              />
+            </div>
 
-          <label>
-            Password
-            <input
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
-              autoComplete="current-password"
-              required
-            />
-          </label>
+            <div className={inputGroupClass}>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                autoComplete="current-password"
+                required
+              />
+            </div>
 
-          <button type="submit" className="primary-button" disabled={isSubmitting}>
-            {isSubmitting ? 'Signing in...' : 'Login'}
-          </button>
-        </form>
-      </section>
+            <Button type="submit" className="mt-2 w-full" disabled={isSubmitting}>
+              <Shield size={17} aria-hidden="true" />
+              {isSubmitting ? 'Signing in...' : 'Login'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </main>
   )
 }
@@ -203,153 +242,214 @@ function PatientsPage() {
   }
 
   return (
-    <main className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Signed in as {getUsername() || 'admin'}</p>
-          <h1>Patient Management</h1>
+    <main className="min-h-screen bg-white">
+      <header className="border-b border-border bg-white">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+              <Users size={21} aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground">Signed in as {getUsername() || 'admin'}</p>
+              <h1 className="text-2xl font-semibold tracking-normal text-black sm:text-3xl">Patient Management</h1>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="secondary" onClick={loadPatients} disabled={loading}>
+              <RefreshCw size={16} aria-hidden="true" className={loading ? 'animate-spin' : ''} />
+              {loading ? 'Loading...' : 'Refresh'}
+            </Button>
+            <Button type="button" onClick={handleLogout}>
+              <LogOut size={16} aria-hidden="true" />
+              Logout
+            </Button>
+          </div>
         </div>
-        <button type="button" className="secondary-button" onClick={handleLogout}>
-          <LogOut size={18} aria-hidden="true" />
-          Logout
-        </button>
       </header>
 
-      {error && <div className="alert error">{error}</div>}
+      <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8">
+        <section className="grid gap-5">
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <div>
+                <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
+                  Patient form
+                </CardDescription>
+                <CardTitle>{isEditing ? 'Edit Patient' : 'Add Patient'}</CardTitle>
+              </div>
+              {isEditing ? (
+                <Button type="button" variant="ghost" size="icon" onClick={resetForm} title="Cancel edit">
+                  <X size={17} aria-hidden="true" />
+                </Button>
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-md bg-muted text-primary">
+                  <UserPlus size={17} aria-hidden="true" />
+                </div>
+              )}
+            </CardHeader>
 
-      <section className="content-grid">
-        <form className="patient-form" onSubmit={handleSubmit} aria-label="Patient form">
-          <div className="form-title-row">
-            <h2>{isEditing ? 'Edit Patient' : 'Add Patient'}</h2>
-            {isEditing && (
-              <button type="button" className="icon-button" onClick={resetForm} title="Cancel edit">
-                <X size={18} aria-hidden="true" />
-              </button>
-            )}
-          </div>
+            <CardContent>
+              <form className="grid gap-4" onSubmit={handleSubmit} aria-label="Patient form">
+                <div className={inputGroupClass}>
+                  <Label htmlFor="patientName">Patient Name</Label>
+                  <Input
+                    id="patientName"
+                    value={form.patientName}
+                    onChange={(event) => updateField('patientName', event.target.value)}
+                    required
+                  />
+                </div>
 
-          <label>
-            Patient Name
-            <input
-              value={form.patientName}
-              onChange={(event) => updateField('patientName', event.target.value)}
-              required
-            />
-          </label>
+                <div className={inputGroupClass}>
+                  <Label htmlFor="birthDate">Birth Date</Label>
+                  <Input
+                    id="birthDate"
+                    type="date"
+                    value={form.birthDate}
+                    onChange={(event) => updateField('birthDate', event.target.value)}
+                    required
+                  />
+                </div>
 
-          <label>
-            Birth Date
-            <input
-              type="date"
-              value={form.birthDate}
-              onChange={(event) => updateField('birthDate', event.target.value)}
-              required
-            />
-          </label>
+                <div className={inputGroupClass}>
+                  <Label htmlFor="gender">Gender</Label>
+                  <select
+                    id="gender"
+                    className={selectClass}
+                    value={form.gender}
+                    onChange={(event) => updateField('gender', event.target.value)}
+                    required
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Female">Female</option>
+                    <option value="Male">Male</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
 
-          <label>
-            Gender
-            <select
-              value={form.gender}
-              onChange={(event) => updateField('gender', event.target.value)}
-              required
-            >
-              <option value="">Select gender</option>
-              <option value="Female">Female</option>
-              <option value="Male">Male</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
+                <div className={inputGroupClass}>
+                  <Label htmlFor="contactNumber">Contact Number</Label>
+                  <Input
+                    id="contactNumber"
+                    value={form.contactNumber}
+                    onChange={(event) => updateField('contactNumber', event.target.value)}
+                    required
+                  />
+                </div>
 
-          <label>
-            Contact Number
-            <input
-              value={form.contactNumber}
-              onChange={(event) => updateField('contactNumber', event.target.value)}
-              required
-            />
-          </label>
+                <div className={inputGroupClass}>
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    value={form.address}
+                    onChange={(event) => updateField('address', event.target.value)}
+                    required
+                  />
+                </div>
 
-          <label>
-            Address
-            <textarea
-              value={form.address}
-              onChange={(event) => updateField('address', event.target.value)}
-              rows="3"
-              required
-            />
-          </label>
+                <Button type="submit" className="mt-1 w-full" disabled={saving}>
+                  {isEditing ? <Save size={17} aria-hidden="true" /> : <Plus size={17} aria-hidden="true" />}
+                  {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Patient'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-          <button type="submit" className="primary-button" disabled={saving}>
-            {isEditing ? <Save size={18} aria-hidden="true" /> : <Plus size={18} aria-hidden="true" />}
-            {saving ? 'Saving...' : isEditing ? 'Save Changes' : 'Add Patient'}
-          </button>
-        </form>
-
-        <section className="table-section" aria-labelledby="patients-title">
-          <div className="table-header">
-            <h2 id="patients-title">Patient Records</h2>
-            <button type="button" className="secondary-button" onClick={loadPatients} disabled={loading}>
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="empty-state">Loading patient records...</div>
-          ) : patients.length === 0 ? (
-            <div className="empty-state">No patient records found.</div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Patient Name</th>
-                    <th>Birth Date</th>
-                    <th>Gender</th>
-                    <th>Contact Number</th>
-                    <th>Address</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {patients.map((patient) => (
-                    <tr key={patient.id}>
-                      <td>{patient.patientName}</td>
-                      <td>{formatDateDisplay(patient.birthDate)}</td>
-                      <td>{patient.gender}</td>
-                      <td>{patient.contactNumber}</td>
-                      <td>{patient.address}</td>
-                      <td>
-                        <div className="action-row">
-                          <button
-                            type="button"
-                            className="icon-button"
-                            onClick={() => startEdit(patient)}
-                            title="Edit patient"
-                          >
-                            <Pencil size={17} aria-hidden="true" />
-                          </button>
-                          <button
-                            type="button"
-                            className="icon-button danger"
-                            onClick={() => handleDelete(patient)}
-                            disabled={deletingId === patient.id}
-                            title="Delete patient"
-                          >
-                            <Trash2 size={17} aria-hidden="true" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {error && (
+            <Alert variant="destructive" className="flex items-start gap-3 font-medium">
+              <AlertCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </Alert>
           )}
         </section>
-      </section>
+
+        <Card className="min-w-0">
+          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+            <div>
+              <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
+                {patients.length} {patients.length === 1 ? 'record' : 'records'}
+              </CardDescription>
+              <CardTitle>Patient Records</CardTitle>
+            </div>
+          </CardHeader>
+
+          <CardContent>
+            {loading ? (
+              <EmptyState>Loading patient records...</EmptyState>
+            ) : patients.length === 0 ? (
+              <EmptyState>No patient records found.</EmptyState>
+            ) : (
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full min-w-[780px] border-collapse bg-white text-sm">
+                  <thead className="bg-muted">
+                    <tr className="text-left">
+                      <TableHead>Patient Name</TableHead>
+                      <TableHead>Birth Date</TableHead>
+                      <TableHead>Gender</TableHead>
+                      <TableHead>Contact Number</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {patients.map((patient) => (
+                      <tr key={patient.id} className="border-t border-border">
+                        <TableCell className="font-semibold text-black">{patient.patientName}</TableCell>
+                        <TableCell>{formatDateDisplay(patient.birthDate)}</TableCell>
+                        <TableCell>{patient.gender}</TableCell>
+                        <TableCell>{patient.contactNumber}</TableCell>
+                        <TableCell>{patient.address}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="icon"
+                              onClick={() => startEdit(patient)}
+                              title="Edit patient"
+                            >
+                              <Edit2 size={15} aria-hidden="true" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:bg-red-50 hover:text-destructive"
+                              onClick={() => handleDelete(patient)}
+                              disabled={deletingId === patient.id}
+                              title="Delete patient"
+                            >
+                              <Trash2 size={15} aria-hidden="true" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </main>
   )
+}
+
+function EmptyState({ children }) {
+  return (
+    <div className="grid min-h-[220px] place-items-center rounded-md border border-dashed border-border bg-muted/50 px-4 text-center text-sm font-semibold text-muted-foreground">
+      {children}
+    </div>
+  )
+}
+
+function TableHead({ children }) {
+  return <th className="px-4 py-3 text-xs font-semibold uppercase tracking-normal text-muted-foreground">{children}</th>
+}
+
+function TableCell({ children, className = '' }) {
+  return <td className={`px-4 py-3 align-top text-foreground ${className}`}>{children}</td>
 }
 
 function formatDateInput(value) {
