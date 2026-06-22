@@ -1,5 +1,6 @@
 using ClinicPatient.Api.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClinicPatient.Api.Data;
 
@@ -7,7 +8,7 @@ public static class DbInitializer
 {
     public static void Initialize(AppDbContext dbContext)
     {
-        dbContext.Database.EnsureCreated();
+        dbContext.Database.Migrate();
 
         if (dbContext.Users.Any(user => user.Username == "admin"))
         {
