@@ -482,24 +482,24 @@ function PatientsPage() {
   const username = getUsername() || 'admin'
 
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-[#F5F7FA]">
       <header className="border-b border-border bg-white">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-2 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
             <img
               src={cldhLogo}
               alt="Central Luzon Doctors' Hospital logo"
-              className="h-14 w-14 shrink-0 object-contain sm:h-16 sm:w-16"
+              className="h-12 w-12 shrink-0 object-contain sm:h-16 sm:w-16"
             />
-            <div>
-              <h1 className="text-2xl font-semibold tracking-normal text-black sm:text-3xl">Patient Management</h1>
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold tracking-normal text-black sm:text-3xl">Patient Management</h1>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="secondary" className="self-start lg:self-auto">
+              <Button type="button" variant="secondary" className="min-h-11 w-full justify-between sm:w-auto lg:self-auto">
                 <User size={16} aria-hidden="true" />
-                {username}
+                <span className="min-w-0 truncate">{username}</span>
                 <ChevronDown size={15} aria-hidden="true" />
               </Button>
             </DropdownMenuTrigger>
@@ -521,10 +521,10 @@ function PatientsPage() {
         </div>
       </header>
 
-      <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8">
+      <div className="mx-auto grid w-full max-w-7xl gap-5 px-4 py-5 sm:px-6 md:py-6 lg:grid-cols-[380px_minmax(0,1fr)] lg:px-8">
         <section className="grid gap-5">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardHeader className="flex-row items-center justify-between gap-4 space-y-0 p-5 sm:p-6">
               <div>
                 <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
                   Patient form
@@ -536,8 +536,8 @@ function PatientsPage() {
               </div>
             </CardHeader>
 
-            <CardContent>
-              <form className="grid gap-4" onSubmit={handleSubmit} aria-label="Patient form">
+            <CardContent className="p-5 pt-0 sm:p-6 sm:pt-0">
+              <form className="grid gap-4 md:grid-cols-2 lg:grid-cols-1" onSubmit={handleSubmit} aria-label="Patient form">
                 <div className={inputGroupClass}>
                   <Label htmlFor="patientName">Patient Name</Label>
                   <Input
@@ -613,15 +613,16 @@ function PatientsPage() {
                     value={form.address}
                     onChange={(event) => updateField('address', formatAddressInput(event.target.value))}
                     maxLength={100}
-                  placeholder="123 Mabini St., Tarlac City"
+                    placeholder="123 Mabini St., Tarlac City"
                     aria-invalid={Boolean(formErrors.address)}
                     aria-describedby="address-error"
+                    className="min-h-[96px]"
                     required
                   />
                   <FieldError id="address-error" message={formErrors.address} />
                 </div>
 
-                <Button type="submit" className="mt-1 w-full" disabled={saving}>
+                <Button type="submit" className="mt-1 min-h-11 w-full md:col-span-2 lg:col-span-1" disabled={saving}>
                   <Plus size={17} aria-hidden="true" />
                   {saving ? 'Saving...' : 'Add Patient'}
                 </Button>
@@ -638,7 +639,7 @@ function PatientsPage() {
         </section>
 
         <Card className="min-w-0">
-          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0 p-5 sm:p-6">
             <div>
               <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
                 {filteredPatients.length} of {patients.length} {patients.length === 1 ? 'record' : 'records'}
@@ -647,8 +648,8 @@ function PatientsPage() {
             </div>
           </CardHeader>
 
-          <CardContent className="grid gap-4">
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_220px]">
+          <CardContent className="grid gap-4 p-5 pt-0 sm:p-6 sm:pt-0">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_180px_220px]">
               <div className="relative">
                 <Search
                   size={16}
@@ -703,58 +704,52 @@ function PatientsPage() {
             ) : filteredPatients.length === 0 ? (
               <EmptyState>No patient records match the current filters.</EmptyState>
             ) : (
-              <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full min-w-[760px] border-collapse bg-white text-sm">
-                  <thead className="bg-muted">
-                    <tr className="text-left">
-                      <TableHead>Patient Name</TableHead>
-                      <TableHead>Birth Date</TableHead>
-                      <TableHead>Gender</TableHead>
-                      <TableHead>Contact Number</TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredPatients.map((patient) => (
-                      <tr key={patient.id} className="border-t border-border">
-                        <TableCell className="font-semibold text-black">{patient.patientName}</TableCell>
-                        <TableCell>{formatDateDisplay(patient.birthDate)}</TableCell>
-                        <TableCell>{patient.gender}</TableCell>
-                        <TableCell>{patient.contactNumber}</TableCell>
-                        <TableCell>{patient.address}</TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button type="button" variant="ghost" size="icon" title="Patient actions">
-                                <MoreHorizontal size={16} aria-hidden="true" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => setDetailPatient(patient)}>
-                                <Eye size={16} aria-hidden="true" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onSelect={() => startEdit(patient)}>
-                                <Edit2 size={16} aria-hidden="true" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onSelect={() => setDeleteTarget(patient)}
-                                className="text-destructive focus:bg-red-50 focus:text-destructive"
-                              >
-                                <Trash2 size={16} aria-hidden="true" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+              <>
+                <div className="grid gap-3 md:hidden">
+                  {filteredPatients.map((patient) => (
+                    <PatientRecordCard
+                      key={patient.id}
+                      patient={patient}
+                      onView={() => setDetailPatient(patient)}
+                      onEdit={() => startEdit(patient)}
+                      onDelete={() => setDeleteTarget(patient)}
+                    />
+                  ))}
+                </div>
+
+                <div className="hidden overflow-x-auto rounded-md border border-border md:block">
+                  <table className="w-full min-w-[760px] border-collapse bg-white text-sm">
+                    <thead className="bg-muted">
+                      <tr className="text-left">
+                        <TableHead>Patient Name</TableHead>
+                        <TableHead>Birth Date</TableHead>
+                        <TableHead>Gender</TableHead>
+                        <TableHead>Contact Number</TableHead>
+                        <TableHead>Address</TableHead>
+                        <TableHead>Actions</TableHead>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {filteredPatients.map((patient) => (
+                        <tr key={patient.id} className="border-t border-border">
+                          <TableCell className="font-semibold text-black">{patient.patientName}</TableCell>
+                          <TableCell>{formatDateDisplay(patient.birthDate)}</TableCell>
+                          <TableCell>{patient.gender}</TableCell>
+                          <TableCell>{patient.contactNumber}</TableCell>
+                          <TableCell>{patient.address}</TableCell>
+                          <TableCell>
+                            <PatientActions
+                              onView={() => setDetailPatient(patient)}
+                              onEdit={() => startEdit(patient)}
+                              onDelete={() => setDeleteTarget(patient)}
+                            />
+                          </TableCell>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -865,8 +860,8 @@ function PatientsPage() {
       </Dialog>
 
       <Dialog open={Boolean(detailPatient)} onOpenChange={(open) => !open && setDetailPatient(null)}>
-        <DialogContent className="max-w-2xl gap-5 p-0">
-          <DialogHeader className="border-b border-border px-6 pb-5 pt-6">
+        <DialogContent className="max-w-2xl gap-4 p-0 sm:gap-5">
+          <DialogHeader className="border-b border-border px-4 pb-4 pt-5 sm:px-6 sm:pb-5 sm:pt-6">
             <div className="flex items-start gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <User size={22} aria-hidden="true" />
@@ -879,13 +874,13 @@ function PatientsPage() {
           </DialogHeader>
 
           {detailPatient && (
-            <div className="grid gap-6 px-6">
-              <div className="flex items-center gap-4 rounded-xl bg-muted/50 px-4 py-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-sm">
+            <div className="grid gap-5 px-4 sm:gap-6 sm:px-6">
+              <div className="flex items-start gap-3 rounded-xl bg-muted/50 px-3 py-4 sm:items-center sm:gap-4 sm:px-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white text-primary shadow-sm sm:h-14 sm:w-14">
                   <User size={24} aria-hidden="true" />
                 </div>
                 <div className="min-w-0">
-                  <h3 className="truncate text-xl font-semibold text-black">{detailPatient.patientName}</h3>
+                  <h3 className="break-words text-lg font-semibold text-black sm:text-xl">{detailPatient.patientName}</h3>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     <GenderChip gender={detailPatient.gender} />
                     <span>Born {formatLongDateDisplay(detailPatient.birthDate)}</span>
@@ -918,12 +913,12 @@ function PatientsPage() {
             </div>
           )}
 
-          <DialogFooter className="border-t border-border px-6 pb-6 pt-4 sm:items-center sm:justify-between">
+          <DialogFooter className="border-t border-border px-4 pb-5 pt-4 sm:items-center sm:justify-between sm:px-6 sm:pb-6">
             <div className="text-left text-sm text-muted-foreground">
               <span className="block font-medium text-foreground">Last Updated</span>
               <span>{formatCleanDateTimeDisplay(detailPatient?.updatedAt || detailPatient?.createdAt)}</span>
             </div>
-            <Button type="button" onClick={() => setDetailPatient(null)}>
+            <Button type="button" className="min-h-11 w-full sm:w-auto" onClick={() => setDetailPatient(null)}>
               Close
             </Button>
           </DialogFooter>
@@ -985,6 +980,61 @@ function EmptyState({ children }) {
     <div className="grid min-h-[220px] place-items-center rounded-md border border-dashed border-border bg-muted/50 px-4 text-center text-sm font-semibold text-muted-foreground">
       {children}
     </div>
+  )
+}
+
+function PatientRecordCard({ patient, onView, onEdit, onDelete }) {
+  return (
+    <article className="rounded-lg border border-border bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="break-words text-base font-semibold text-black">{patient.patientName}</h3>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <GenderChip gender={patient.gender} />
+            <span>{formatDateDisplay(patient.birthDate)}</span>
+          </div>
+        </div>
+        <PatientActions onView={onView} onEdit={onEdit} onDelete={onDelete} />
+      </div>
+
+      <dl className="mt-4 grid gap-3 text-sm">
+        <div className="grid gap-1">
+          <dt className="font-medium text-muted-foreground">Contact Number</dt>
+          <dd className="font-semibold text-foreground">{patient.contactNumber}</dd>
+        </div>
+        <div className="grid gap-1">
+          <dt className="font-medium text-muted-foreground">Address</dt>
+          <dd className="break-words font-semibold text-foreground">{patient.address}</dd>
+        </div>
+      </dl>
+    </article>
+  )
+}
+
+function PatientActions({ onView, onEdit, onDelete }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon" className="h-11 w-11 shrink-0" title="Patient actions">
+          <MoreHorizontal size={16} aria-hidden="true" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onSelect={onView}>
+          <Eye size={16} aria-hidden="true" />
+          View Details
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={onEdit}>
+          <Edit2 size={16} aria-hidden="true" />
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:bg-red-50 focus:text-destructive">
+          <Trash2 size={16} aria-hidden="true" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
