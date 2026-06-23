@@ -13,3 +13,4 @@ build/
 *.sqlite-wal
 .env
 .env.local
+RENDERDEPLOYMENT.md

@@ -1,6 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5088/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://localhost:5088/api' : '')
 const TOKEN_KEY = 'clinic_patient_token'
 const USERNAME_KEY = 'clinic_patient_username'
+
+if (!API_BASE_URL) {
+  throw new Error('VITE_API_BASE_URL must be configured for production builds.')
+}
 
 export function getToken() {
   return localStorage.getItem(TOKEN_KEY)
