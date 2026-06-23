@@ -919,7 +919,7 @@ function PatientsPage() {
           <DialogFooter className="border-t border-border px-4 pb-5 pt-4 sm:items-center sm:justify-between sm:px-6 sm:pb-6">
             <div className="text-left text-sm text-muted-foreground">
               <span className="block font-medium text-foreground">Last Updated</span>
-              <span>{formatCleanDateTimeDisplay(detailPatient?.updatedAt || detailPatient?.createdAt)}</span>
+              <span>{formatCleanDateTimeDisplay(detailPatient?.updatedAt) || 'Not updated'}</span>
             </div>
             <Button type="button" className="min-h-11 w-full sm:w-auto" onClick={() => setDetailPatient(null)}>
               Close

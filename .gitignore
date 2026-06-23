@@ -14,3 +14,6 @@ build/
 .env
 .env.local
 RENDERDEPLOYMENT.md
+EXPLANATION.md
+.gitignore
+
