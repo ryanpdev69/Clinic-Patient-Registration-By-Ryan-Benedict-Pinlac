@@ -38,4 +38,10 @@
   button:disabled {
     cursor: not-allowed;
   }
+
+  .birth-date-filter::-webkit-datetime-edit {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
 }

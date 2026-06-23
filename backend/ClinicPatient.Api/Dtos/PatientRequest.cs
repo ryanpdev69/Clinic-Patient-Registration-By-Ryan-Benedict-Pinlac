@@ -62,10 +62,10 @@ public class PatientRequest : IValidatableObject
 
         if (!string.IsNullOrWhiteSpace(address))
         {
-            if (!Regex.IsMatch(address, @"^[\p{L}\d. ]+$") || address.StartsWith(' ') || address.Contains("  "))
+            if (!Regex.IsMatch(address, @"^[\p{L}\d., ]+$") || address.StartsWith(' ') || address.Contains("  "))
             {
                 yield return new ValidationResult(
-                    "Address can contain only letters, numbers, spaces, or periods and cannot contain double spaces.",
+                    "Address can contain only letters, numbers, spaces, periods, or commas and cannot contain double spaces.",
                     new[] { nameof(Address) });
             }
 

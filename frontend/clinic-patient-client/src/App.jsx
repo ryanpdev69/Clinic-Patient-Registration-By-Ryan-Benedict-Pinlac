@@ -6,7 +6,9 @@ import {
   ChevronDown,
   Edit2,
   Eye,
+  EyeOff,
   Hash,
+  Lock,
   LogOut,
   MapPin,
   MoreHorizontal,
@@ -67,8 +69,11 @@ const emptyPatient = {
 const inputGroupClass = 'grid gap-2'
 const selectClass =
   'flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+const loginInputClass =
+  'h-12 border-input pl-11 pr-11 text-[15px] transition-all duration-200 placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary'
 const todayDate = formatDateInput(new Date().toISOString())
 const oldestAllowedBirthDate = formatDateInput(getDateYearsAgo(120).toISOString())
+const rememberedUsernameKey = 'clinic_patient_remembered_username'
 
 function ProtectedRoute({ children }) {
   return getToken() ? children : <Navigate to="/login" replace />
@@ -76,9 +81,15 @@ function ProtectedRoute({ children }) {
 
 function LoginPage() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ username: 'admin', password: 'admin123' })
+  const [form, setForm] = useState({
+    username: localStorage.getItem(rememberedUsernameKey) || '',
+    password: ''
+  })
+  const [formErrors, setFormErrors] = useState({})
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [rememberMe, setRememberMe] = useState(Boolean(localStorage.getItem(rememberedUsernameKey)))
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     if (getToken()) {
@@ -89,11 +100,27 @@ function LoginPage() {
   async function handleSubmit(event) {
     event.preventDefault()
     setError('')
+
+    const validationErrors = validateLoginForm(form)
+
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors)
+      return
+    }
+
     setIsSubmitting(true)
+    setFormErrors({})
 
     try {
       const session = await login(form)
       saveSession(session)
+
+      if (rememberMe) {
+        localStorage.setItem(rememberedUsernameKey, form.username.trim())
+      } else {
+        localStorage.removeItem(rememberedUsernameKey)
+      }
+
       navigate('/patients', { replace: true })
     } catch (requestError) {
       setError(requestError.message)
@@ -102,58 +129,140 @@ function LoginPage() {
     }
   }
 
+  function updateLoginField(field, value) {
+    const nextForm = { ...form, [field]: value }
+    setForm(nextForm)
+
+    if (Object.keys(formErrors).length > 0) {
+      setFormErrors(validateLoginForm(nextForm))
+    }
+  }
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white px-4 py-10">
-      <Card className="w-full max-w-[420px]">
-        <CardHeader className="space-y-4">
-          <img src={cldhLogo} alt="Central Luzon Doctors' Hospital logo" className="h-28 w-28 object-contain" />
-          <div className="space-y-1">
-            <CardDescription className="font-semibold uppercase tracking-normal text-muted-foreground">
-              Clinic Patient Registration
-            </CardDescription>
-            <CardTitle className="text-3xl text-black">Sign in</CardTitle>
-          </div>
-        </CardHeader>
+    <main className="flex min-h-screen items-center justify-center bg-[#F5F7FA] px-4 py-10">
+      <div className="grid w-full max-w-[440px] gap-4">
+        <Card className="relative w-full overflow-hidden rounded-xl border-transparent bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+          <div className="h-1.5 bg-primary" aria-hidden="true" />
+          <CardHeader className="items-center space-y-5 px-8 pb-5 pt-8 text-center">
+            <img src={cldhLogo} alt="Central Luzon Doctors' Hospital logo" className="h-32 w-32 object-contain" />
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-primary">Central Luzon Doctors' Hospital</p>
+              <CardDescription className="text-sm font-semibold uppercase tracking-normal text-muted-foreground">
+                Clinic Patient Registration
+              </CardDescription>
+              <CardTitle className="text-[28px] font-bold leading-tight text-black">Sign in</CardTitle>
+            </div>
+          </CardHeader>
 
-        <CardContent>
-          <form onSubmit={handleSubmit} className="grid gap-4">
-            {error && (
-              <Alert variant="destructive" className="flex items-start gap-3 font-medium">
-                <AlertCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
-                <span>{error}</span>
-              </Alert>
-            )}
+          <CardContent className="px-8 pb-8">
+            <form onSubmit={handleSubmit} className="grid gap-5" noValidate>
+              {error && (
+                <Alert variant="destructive" className="flex items-start gap-3 px-3 py-3 font-medium">
+                  <AlertCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
+                  <span>{error}</span>
+                </Alert>
+              )}
 
-            <div className={inputGroupClass}>
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={form.username}
-                onChange={(event) => setForm({ ...form, username: event.target.value })}
-                autoComplete="username"
-                required
-              />
+            <div className="grid gap-2">
+              <Label htmlFor="username" className="text-sm font-medium">
+                Username
+              </Label>
+              <div className="relative">
+                <User
+                  size={18}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  id="username"
+                  value={form.username}
+                  onChange={(event) => updateLoginField('username', event.target.value)}
+                  autoComplete="username"
+                  placeholder="Enter username"
+                  aria-invalid={Boolean(formErrors.username)}
+                  aria-describedby="username-error"
+                  className={loginInputClass}
+                />
+              </div>
+              <FieldError id="username-error" message={formErrors.username} />
             </div>
 
-            <div className={inputGroupClass}>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={form.password}
-                onChange={(event) => setForm({ ...form, password: event.target.value })}
-                autoComplete="current-password"
-                required
-              />
+            <div className="grid gap-2">
+              <Label htmlFor="password" className="text-sm font-medium">
+                Password
+              </Label>
+              <div className="relative">
+                <Lock
+                  size={18}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={(event) => updateLoginField('password', event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Enter password"
+                  aria-invalid={Boolean(formErrors.password)}
+                  aria-describedby="password-error"
+                  className={loginInputClass}
+                />
+                <button
+                  type="button"
+                  className="absolute right-1.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors duration-200 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  onClick={() => setShowPassword((currentValue) => !currentValue)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                </button>
+              </div>
+              <FieldError id="password-error" message={formErrors.password} />
             </div>
 
-            <Button type="submit" className="mt-2 w-full" disabled={isSubmitting}>
-              <Shield size={17} aria-hidden="true" />
+            <div className="flex">
+              <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-foreground">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(event) => setRememberMe(event.target.checked)}
+                  className="h-4 w-4 rounded border-input text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                />
+                Remember me
+              </label>
+            </div>
+
+            <Button
+              type="submit"
+              className="h-12 w-full bg-primary text-[15px] transition-colors duration-200 hover:bg-[#1e4b8f] active:bg-[#0d2b59]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Shield size={17} aria-hidden="true" />
+              )}
               {isSubmitting ? 'Signing in...' : 'Login'}
             </Button>
-          </form>
-        </CardContent>
-      </Card>
+            </form>
+          </CardContent>
+        </Card>
+
+        <section className="rounded-lg border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-slate-700">
+          <p className="font-semibold text-primary">Sample login credentials</p>
+          <div className="mt-2 grid gap-1 font-medium">
+            <p>
+              Username: <span className="font-bold text-slate-900">admin</span>
+            </p>
+            <p>
+              Password: <span className="font-bold text-slate-900">admin123</span>
+            </p>
+          </div>
+        </section>
+      </div>
     </main>
   )
 }
@@ -168,7 +277,8 @@ function PatientsPage() {
   const [editSaving, setEditSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [createdDateFilter, setCreatedDateFilter] = useState('')
+  const [birthDateFilter, setBirthDateFilter] = useState('')
+  const [genderFilter, setGenderFilter] = useState('')
   const [formErrors, setFormErrors] = useState({})
   const [editPatient, setEditPatient] = useState(null)
   const [editForm, setEditForm] = useState(emptyPatient)
@@ -194,12 +304,14 @@ function PatientsPage() {
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(normalizedSearch))
 
-      const matchesCreatedDate =
-        !createdDateFilter || formatDateInput(patient.createdAt) === createdDateFilter
+      const matchesBirthDate =
+        !birthDateFilter || formatDateInput(patient.birthDate) === birthDateFilter
 
-      return matchesSearch && matchesCreatedDate
+      const matchesGender = !genderFilter || patient.gender === genderFilter
+
+      return matchesSearch && matchesBirthDate && matchesGender
     })
-  }, [createdDateFilter, patients, searchTerm])
+  }, [birthDateFilter, genderFilter, patients, searchTerm])
 
   useEffect(() => {
     loadPatients()
@@ -501,7 +613,7 @@ function PatientsPage() {
                     value={form.address}
                     onChange={(event) => updateField('address', formatAddressInput(event.target.value))}
                     maxLength={100}
-                    placeholder="123 Mabini St. Tarlac City"
+                  placeholder="123 Mabini St., Tarlac City"
                     aria-invalid={Boolean(formErrors.address)}
                     aria-describedby="address-error"
                     required
@@ -536,7 +648,7 @@ function PatientsPage() {
           </CardHeader>
 
           <CardContent className="grid gap-4">
-            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">
+            <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_220px]">
               <div className="relative">
                 <Search
                   size={16}
@@ -552,6 +664,23 @@ function PatientsPage() {
                 />
               </div>
               <div className="relative">
+                <UserCheck
+                  size={16}
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                />
+                <select
+                  value={genderFilter}
+                  onChange={(event) => setGenderFilter(event.target.value)}
+                  className={`${selectClass} pl-9`}
+                  aria-label="Filter patient records by gender"
+                >
+                  <option value="">All genders</option>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                </select>
+              </div>
+              <div className="relative">
                 <Calendar
                   size={16}
                   aria-hidden="true"
@@ -559,10 +688,10 @@ function PatientsPage() {
                 />
                 <Input
                   type="date"
-                  value={createdDateFilter}
-                  onChange={(event) => setCreatedDateFilter(event.target.value)}
-                  className="pl-9"
-                  aria-label="Filter patient records by created date"
+                  value={birthDateFilter}
+                  onChange={(event) => setBirthDateFilter(event.target.value)}
+                  className="birth-date-filter px-9 text-center"
+                  aria-label="Filter patient records by birth date"
                 />
               </div>
             </div>
@@ -714,7 +843,7 @@ function PatientsPage() {
                 value={editForm.address}
                 onChange={(event) => updateEditField('address', formatAddressInput(event.target.value))}
                 maxLength={100}
-                placeholder="123 Mabini St. Tarlac City"
+                placeholder="123 Mabini St., Tarlac City"
                 aria-invalid={Boolean(editFormErrors.address)}
                 aria-describedby="editAddress-error"
                 required
@@ -913,6 +1042,20 @@ function GenderChip({ gender }) {
   )
 }
 
+function validateLoginForm(credentials) {
+  const errors = {}
+
+  if (!credentials.username.trim()) {
+    errors.username = 'Username is required.'
+  }
+
+  if (!credentials.password) {
+    errors.password = 'Password is required.'
+  }
+
+  return errors
+}
+
 function validatePatientForm(patient, existingPatients = [], currentPatientId = null) {
   const errors = {}
   const today = new Date(`${todayDate}T00:00:00`)
@@ -971,8 +1114,8 @@ function validatePatientForm(patient, existingPatients = [], currentPatientId = 
     errors.address = 'Address is required.'
   } else if (patient.address.length > 100) {
     errors.address = 'Address must be 100 characters or fewer.'
-  } else if (!/^[\p{L}\d. ]+$/u.test(patient.address)) {
-    errors.address = 'Address can contain only letters, numbers, spaces, or periods.'
+  } else if (!/^[\p{L}\d., ]+$/u.test(patient.address)) {
+    errors.address = 'Address can contain only letters, numbers, spaces, periods, or commas.'
   } else if (!/\p{L}/u.test(patient.address)) {
     errors.address = 'Address must include at least one letter.'
   }
@@ -1020,7 +1163,7 @@ function formatPatientNameInput(value) {
 
 function formatAddressInput(value) {
   const allowedCharacters = Array.from(value)
-    .filter((character) => /[\p{L}\d. ]/u.test(character))
+    .filter((character) => /[\p{L}\d., ]/u.test(character))
     .join('')
     .replace(/\s+/g, ' ')
     .replace(/^\s+/, '')

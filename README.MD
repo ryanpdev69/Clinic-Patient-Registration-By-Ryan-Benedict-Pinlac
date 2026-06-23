@@ -41,6 +41,37 @@ ClinicPatientRegistration/
 
 The backend targets `net10.0`.
 
+## Run Locally From Root Folder
+
+Open two terminals in the repository root folder.
+
+Terminal 1, start the ASP.NET Core API:
+
+```bash
+dotnet restore
+dotnet run --project backend/ClinicPatient.Api --urls http://localhost:5088
+```
+
+Terminal 2, install frontend dependencies and start Vite:
+
+```bash
+npm install
+npm run dev
+```
+
+Then open:
+
+```txt
+http://localhost:5173
+```
+
+Default login:
+
+```txt
+Username: admin
+Password: admin123
+```
+
 ## Backend Setup
 
 From the repository root:
