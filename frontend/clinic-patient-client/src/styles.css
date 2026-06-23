@@ -39,6 +39,24 @@
     cursor: not-allowed;
   }
 
+  .date-input {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .date-input::-webkit-datetime-edit {
+    min-width: 0;
+  }
+
+  .date-input::-webkit-date-and-time-value {
+    min-width: 0;
+  }
+
+  .date-input::-webkit-calendar-picker-indicator {
+    flex-shrink: 0;
+  }
+
   .birth-date-filter::-webkit-datetime-edit {
     display: block;
     width: 100%;

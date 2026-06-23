@@ -68,9 +68,10 @@ const emptyPatient = {
 
 const inputGroupClass = 'grid gap-2'
 const selectClass =
-  'flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
+  'flex h-10 w-full min-w-0 rounded-md border border-input bg-white px-3 py-2 text-sm text-foreground ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60'
 const loginInputClass =
   'h-12 border-input pl-11 pr-11 text-[15px] transition-all duration-200 placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary'
+const dateInputClass = 'date-input min-w-0 max-w-full text-sm'
 const todayDate = formatDateInput(new Date().toISOString())
 const oldestAllowedBirthDate = formatDateInput(getDateYearsAgo(120).toISOString())
 const rememberedUsernameKey = 'clinic_patient_remembered_username'
@@ -562,6 +563,7 @@ function PatientsPage() {
                     onChange={(event) => updateField('birthDate', event.target.value)}
                     min={oldestAllowedBirthDate}
                     max={todayDate}
+                    className={dateInputClass}
                     aria-invalid={Boolean(formErrors.birthDate)}
                     aria-describedby="birthDate-error"
                     required
@@ -691,7 +693,7 @@ function PatientsPage() {
                   type="date"
                   value={birthDateFilter}
                   onChange={(event) => setBirthDateFilter(event.target.value)}
-                  className="birth-date-filter px-9 text-center"
+                  className={`${dateInputClass} birth-date-filter px-9 text-center`}
                   aria-label="Filter patient records by birth date"
                 />
               </div>
@@ -787,6 +789,7 @@ function PatientsPage() {
                 onChange={(event) => updateEditField('birthDate', event.target.value)}
                 min={oldestAllowedBirthDate}
                 max={todayDate}
+                className={dateInputClass}
                 aria-invalid={Boolean(editFormErrors.birthDate)}
                 aria-describedby="editBirthDate-error"
                 required
